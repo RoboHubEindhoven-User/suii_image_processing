@@ -24,6 +24,7 @@ class PostProcessing:
         self.w_per_pix = w_square/64.0  # In mm per pix
         self.cx_biggest = None
         self.object_list = []
+        self.debug = False
         # Camera calibration files
         data = np.load('/home/jeroen/catkin_ws/src/image_processing/camera_calibration/mtx.npz')
         self.mtx = data['mtx']
@@ -40,6 +41,7 @@ class PostProcessing:
             debug {[bool]} -- [If true than the code displays result image]
         """      
         name_var = object_name
+        self.debug = debug
         self.left_upper = roi[0:2]
         self.right_lower = roi[2:4]
         # Get filter  val
@@ -59,7 +61,7 @@ class PostProcessing:
             return True  
         else: 
             return False
-        if debug:
+        if self.debug:
             cv2.imshow('img_var',img)
         
     def build_view(self):
@@ -88,42 +90,34 @@ class PostProcessing:
         Returns:
             [int] -- [Returns four integers for changing filter settings]
         """        
-        name = obj_name
         black_list = ["Bolt","Big black profile", "Small black profile", "Motor", "R20"]
         alu_list = ["Big aluminium profile","Small aluminium profile"]
         nut_list = ["Big nut", "Small nut"]
         shiny_list = ["Bearing box","Axis","Distance tube"] 
         
-        #change for loop to python class example
-        for i in black_list:
-            if name in i:
-                area_val = 6
-                blur_val = 126
-                lower_val = 75
-                upper_val = 251
-    
-        for i in nut_list:
-            if name in i:
-                area_val = 4
-                blur_val = 193
-                lower_val = 8
-                upper_val = 100
-    
-        for i in alu_list:
-            if name in i:
-                area_val = 9
-                blur_val = 126
-                lower_val = 62
-                upper_val = 83
+        if obj_name in black_list:
+            area_val = 6
+            blur_val = 126
+            lower_val = 75
+            upper_val = 251
+        elif obj_name in nut_list:
+            area_val = 4
+            blur_val = 193
+            lower_val = 8
+            upper_val = 100
+        elif obj_name in alu_list:
+            area_val = 9
+            blur_val = 126
+            lower_val = 62
+            upper_val = 83
+        elif obj_name in shiny_list:
+            area_val = 9
+            blur_val = 74
+            lower_val = 26
+            upper_val = 103
         
-        for i in shiny_list:
-            if name in i:
-                area_val = 9
-                blur_val = 74
-                lower_val = 26
-                upper_val = 103
-        
-        print("area {} blur {} lower {} upper {}".format(area_val,blur_val,lower_val,upper_val))
+        if self.debug:
+            print("area {} blur {} lower {} upper {}".format(area_val,blur_val,lower_val,upper_val))
         return area_val, blur_val, lower_val, upper_val
             
     def filter_img(self,img, area_val, blur_val, lower_val, upper_val):
@@ -206,8 +200,7 @@ class PostProcessing:
                         [vx,vy,self.x,self.y] = cv2.fitLine(self.biggest_c, cv2.DIST_L2,0,0.01,0.01)
                         self.lefty = int((-self.x*vy/vx) + self.y)
                         self.righty = int(((self.cols-self.x)*vy/vx)+self.y)
-                        self.top = self.cols-1,self.righty 
-        #print("cx{}, cy{}, l_pix{}, w_pix{}".format(self.cx_biggest,self.cy_biggest,self.l_pix_biggest, self.w_pix_biggest))           
+                        self.top = self.cols-1,self.righty          
     
     def calculate_draw_result(self,img):
         """[Calculates the orientation and rotation results and draws the results on the image]
@@ -222,15 +215,14 @@ class PostProcessing:
         x_mid = 320 # in pixels
         y_mid = 240 # in pixels
         if self.cx_biggest is not None:
-            #delete print lines later
-            print("pix length: {}, pix width: {}".format(self.l_pix_biggest,self.w_pix_biggest))
             cv2.circle(img, (x_mid, y_mid), 7, (255, 255, 255), -1) 
             # draw the contour of the shape on the image
             cv2.drawContours(img , [self.biggest_c], -1, (255, 0, 0), 2)
-            #printin real lenght of object for testing purpose
             real_length = self.l_pix_biggest * self.l_per_pix
             real_width = self.w_pix_biggest * self.w_per_pix
-            print("Object lenght: {} mm, Object width: {} mm".format(real_length,real_width))
+            if self.debug:
+                print("pix length: {}, pix width: {}".format(self.l_pix_biggest,self.w_pix_biggest))
+                print("Object lenght: {} mm, Object width: {} mm".format(real_length,real_width))
             #calculate coordinate from midpoint
             x_orientation = self.cx_biggest - x_mid  #in pixels (from line)
             y_orientation = y_mid - self.cy_biggest #in pixels (from line)
@@ -238,15 +230,12 @@ class PostProcessing:
             y_orientation = y_orientation*self.w_per_pix
             draw_x = int(self.cx_biggest)
             draw_y = int(self.cy_biggest)        
-            #print("X orientation: {} mm, Y orientation: {} mm".format(x_orientation,y_orientation))
             cv2.circle(img , (draw_x,draw_y), 7, (125, 0, 125), -1)
             box = cv2.boxPoints(self.rect_biggest)
             box = np.int0(box)
             cv2.drawContours(img ,[box],0,(0,0,255),2)
             #get rotation of line in radians
             myradians = math.atan2(self.top[1]-self.cy_biggest, self.top[0]-self.cx_biggest)
-            #print("Object rotation: {} RAD".format(myradians))
-            #print("----------------------------------------------")
             #drawing rectangle ROI
             cv2.rectangle(img , self.left_upper, self.right_lower, (125,0,125), 2)
             #drawing line and line midpoint

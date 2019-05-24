@@ -51,7 +51,7 @@ True
 ls /dev/video*
 ```
 **note**: If you want to show the processed image, edit the post_processing_test.py file. 
-change *build_center = self.test.build_center("Bolt",(0,0,640,480),frame,False)* to *build_center = self.test.build_center("Bolt",(0,0,640,480),frame,True)*
+**change** *build_center = self.test.build_center("Bolt",(0,0,640,480),frame,False)* **to** *build_center = self.test.build_center("Bolt",(0,0,640,480),frame,True)*
  
 
 ## Authors
