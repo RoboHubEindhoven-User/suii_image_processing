@@ -56,13 +56,14 @@ class PostProcessing:
         tf_vals = self.calculate_draw_result(img)
         #add values to list
         list_vars = [name_var,tf_vals[0],tf_vals[1],tf_vals[2]]
+        if self.debug:
+            cv2.imshow('img_var',img)
         if tf_vals[3] == True:
             self.object_list.append(list_vars)
             return True  
         else: 
             return False
-        if self.debug:
-            cv2.imshow('img_var',img)
+        
         
     def build_view(self):
         """[Returning object_list]

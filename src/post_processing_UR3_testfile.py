@@ -52,9 +52,9 @@ class PostProcessing:
         self.object_list = []
         self.list_vars = []
         #camera calibration 
-        data = np.load('mtx.npz')
+        data = np.load('/home/jeroen/workspaces/image_processing/camera_calibration/mtx.npz')
         self.mtx = data['mtx']
-        data = np.load('dist.npz')
+        data = np.load('/home/jeroen/workspaces/image_processing/camera_calibration/dist.npz')
         self.dist = data['dist'] 
         
         #only use ros to test with UR3 without statemachine!!!
