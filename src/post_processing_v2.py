@@ -20,15 +20,15 @@ class PostProcessing:
         l_square = 40 #mm
         w_square = 40 #mm
         # Calcutaing mm/pixel ratio from measurements from 40 cm hight:
-        self.l_per_pix = l_square/64.0 # In mm per pix
-        self.w_per_pix = w_square/64.0  # In mm per pix
+        self.l_per_pix = l_square/60.0 # In mm per pix
+        self.w_per_pix = w_square/60.0  # In mm per pix
         self.cx_biggest = None
         self.object_list = []
         self.debug = False
         # Camera calibration files
-        data = np.load('/home/jeroen/catkin_ws/src/image_processing/camera_calibration/mtx.npz')
+        data = np.load('/home/jeroen/workspaces/image_processing/camera_calibration/mtx.npz')
         self.mtx = data['mtx']
-        data = np.load('/home/jeroen/catkin_ws/src/image_processing/camera_calibration/dist.npz')
+        data = np.load('/home/jeroen/workspaces/image_processing/camera_calibration/dist.npz')
         self.dist = data['dist'] 
 
     def build_center(self, object_name, roi, img, debug):
@@ -40,6 +40,7 @@ class PostProcessing:
             img {[numpy.ndarray]} -- [Input image]
             debug {[bool]} -- [If true than the code displays result image]
         """      
+        self.cx_biggest = None
         name_var = object_name
         self.debug = debug
         self.left_upper = roi[0:2]
@@ -47,7 +48,7 @@ class PostProcessing:
         # Get filter  val
         area_val, blur_val, lower_val, upper_val = self.get_filter_vals(name_var)
         # Filters the image
-        img_edges = self.filter_img(img, area_val, blur_val, lower_val, upper_val)
+        img_edges, img = self.filter_img(img, area_val, blur_val, lower_val, upper_val)
         # Get contours
         contours = self.get_contours(img_edges)
         # Get biggest possible rectangle for getting outer contour
@@ -91,10 +92,11 @@ class PostProcessing:
         Returns:
             [int] -- [Returns four integers for changing filter settings]
         """        
-        black_list = ["Bolt","Big black profile", "Small black profile", "Motor", "R20"]
-        alu_list = ["Big aluminium profile","Small aluminium profile"]
-        nut_list = ["Big nut", "Small nut"]
-        shiny_list = ["Bearing box","Axis","Distance tube"] 
+        black_list = ["F20_20_B","S40_40_B","M20_100","R20","Bearing","Motor"]
+        alu_list = ["F20_20_G","S40_40_G"]
+        nut_list = ["M20", "M30"]
+        shiny_list = ["Bearing_Box","Axis","Distance_Tube"] 
+        malle_list = ["F20_20_Mall","F40_40_Mall","R20_Mall","Bolt_Mall","M20_Mall","M30_Mall"]
         
         if obj_name in black_list:
             area_val = 6
@@ -102,20 +104,25 @@ class PostProcessing:
             lower_val = 75
             upper_val = 251
         elif obj_name in nut_list:
-            area_val = 4
-            blur_val = 193
-            lower_val = 8
-            upper_val = 100
-        elif obj_name in alu_list:
-            area_val = 9
-            blur_val = 126
-            lower_val = 62
-            upper_val = 83
-        elif obj_name in shiny_list:
-            area_val = 9
-            blur_val = 74
-            lower_val = 26
+            area_val = 3
+            blur_val = 149
+            lower_val = 48
             upper_val = 103
+        elif obj_name in alu_list:
+            area_val = 6
+            blur_val = 30
+            lower_val = 55
+            upper_val = 138
+        elif obj_name in shiny_list:
+            area_val = 0
+            blur_val = 0
+            lower_val = 20
+            upper_val = 51
+        elif obj_name in malle_list:
+            area_val = 6
+            blur_val = 125
+            lower_val = 33
+            upper_val = 74
         
         if self.debug:
             print("area {} blur {} lower {} upper {}".format(area_val,blur_val,lower_val,upper_val))
@@ -144,7 +151,7 @@ class PostProcessing:
         gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
         edges = cv2.Canny(gray, lower_val, upper_val)
         
-        return edges
+        return edges, image
     
     def get_contours(self,edges):
         """[Get the contour from the canny edges]
@@ -170,7 +177,7 @@ class PostProcessing:
         """        
         l_pix = 0
         w_pix = 0
-        MIN_THRESH = 10
+        MIN_THRESH = 50
         for c in contours:
             if cv2.contourArea(c) > MIN_THRESH:
                 #get center of contour
@@ -180,7 +187,7 @@ class PostProcessing:
                 cx_temp = int(M["m10"] / M["m00"])
                 cy_temp = int(M["m01"] / M["m00"])
                 #check if center of contour is in ROI
-                if(cx_temp > self.left_upper[0] and cx_temp < self.right_lower[0]  and cy_temp > self.left_upper[1] and cy_temp < self.right_lower[1]):
+                if(cx_temp > (self.left_upper[0]-10) and cx_temp < (self.right_lower[0]+10.0)  and cy_temp > (self.left_upper[1]-10) and cy_temp < (self.right_lower[1]+10)):
                     #biggest rectangle around object for orientation 
                     rect = cv2.minAreaRect(c)
                     dimen = rect[1]
@@ -227,8 +234,8 @@ class PostProcessing:
             #calculate coordinate from midpoint
             x_orientation = self.cx_biggest - x_mid  #in pixels (from line)
             y_orientation = y_mid - self.cy_biggest #in pixels (from line)
-            x_orientation = x_orientation*self.l_per_pix
-            y_orientation = y_orientation*self.w_per_pix
+            x_orientation = (x_orientation*self.l_per_pix)/1000 #calculate pixel to meter and invert
+            y_orientation = (y_orientation*self.w_per_pix)/1000 #calculate pixel to meter and invert
             draw_x = int(self.cx_biggest)
             draw_y = int(self.cy_biggest)        
             cv2.circle(img , (draw_x,draw_y), 7, (125, 0, 125), -1)
