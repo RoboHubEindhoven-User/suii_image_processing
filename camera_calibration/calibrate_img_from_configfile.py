@@ -35,6 +35,4 @@ cv2.waitKey(10000)
 cv2.imwrite('calibresult.png',dst)
 img = cv2.imread('calibresult.png')
 
-
-
 cv2.destroyAllWindows()

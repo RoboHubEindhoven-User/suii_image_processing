@@ -120,7 +120,7 @@ class PostProcessing:
             upper_val = 51
         elif obj_name in malle_list:
             area_val = 6
-            blur_val = 125
+            blur_val = 75
             lower_val = 33
             upper_val = 74
         
