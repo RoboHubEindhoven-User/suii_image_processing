@@ -6,7 +6,7 @@ If you want to learn more of how the vision systems work, please check out our *
 
 ## Getting Started
 
-This package only contains python2 scripts and make use of OpenCV-3.3.1-dev and numpy 1.11.0.
+This package only contains python2 scripts and make use of OpenCV-3.3.1-dev and numpy 1.11.0. Furthermore we used the BlasterX Senz3D camera. For this we need to have the librealsense2 drivers installed.
 
 ### Prerequisites
 
@@ -20,6 +20,14 @@ print(cv.__version__)
 ```
 The last line will result in printing your installed OpenCV version. For more information about installin OpenCV, check the [OpenCV tutorial](https://docs.opencv.org/3.4/d2/de6/tutorial_py_setup_in_ubuntu.html)
 
+Installing the librealsense2 drivers:
+
+```
+Sudo apt-get update
+sudo apt install librealsense2-dkms librealsense2-utils librealsense2-dev
+pip3 install pyrealsense2
+```
+
 ### Installing
 
 To install the image_processing package in your catkin workspace, you will need to run the following lines:
@@ -30,6 +38,9 @@ catkin_make
 ```
 
 ## Running the tests
+
+For testing the BlasterX Sens3D run the **_blasterX testfile_** and check if the camera feed opens.
+
 
 To test the code you need to run the following lines:
 '''
